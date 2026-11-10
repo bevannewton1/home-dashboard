@@ -59,6 +59,7 @@ html,body{margin:0;height:100%;background:var(--ground);overflow:hidden;color:va
 .stats b{font-family:var(--display);font-size:32px;color:var(--sand);margin-right:6px;font-weight:700}
 .map{flex:1;min-height:0;background:var(--sea)}
 .leaflet-container{background:var(--sea);font-family:var(--body)}
+.camp .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.85) saturate(.4)}
 .leaflet-control-attribution{background:rgba(22,32,28,.75)!important;color:#8E998C!important;font-size:11px}
 .leaflet-control-attribution a{color:#B9C3B6!important}
 
@@ -134,7 +135,8 @@ html,body{margin:0;height:100%;background:var(--ground);overflow:hidden;color:va
 const CONFIG = {
   // Paste the long ID from your Google Sheet's address bar between the quotes.
   // https://docs.google.com/spreadsheets/d/  THIS-PART  /edit
-   SHEET_ID: "1k0u-WqEJjXyqQIfxW-LIRdOz_A8GJh1TbX-iJxD7mv4",
+  SHEET_ID: "1k0u-WqEJjXyqQIfxW-LIRdOz_A8GJh1TbX-iJxD7mv4",
+
   // Tab names in the Google Sheet (must match exactly)
   TABS: { camps: "Campsites", wings: "Wings", photos: "Photos", countdowns: "Countdowns" },
 
@@ -270,7 +272,7 @@ function renderCountdowns(rows){
 
 /* ---------- camping map ---------- */
 const campMap=L.map("campMap",{zoomControl:false,attributionControl:true,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,zoomSnap:0.25,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:12,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(campMap);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:12,attribution:'&copy; OpenStreetMap contributors'}).addTo(campMap);
 const SA_BOUNDS=L.latLngBounds([-35.2,13.5],[-15.6,36]);
 campMap.fitBounds(SA_BOUNDS);
 L.marker([CONFIG.HOME.lat,CONFIG.HOME.lng],{icon:L.divIcon({className:"",html:'<div class="pin home"></div>',iconSize:[16,16],iconAnchor:[8,8]}),interactive:false}).addTo(campMap);
