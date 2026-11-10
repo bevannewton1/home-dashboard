@@ -134,8 +134,7 @@ html,body{margin:0;height:100%;background:var(--ground);overflow:hidden;color:va
 const CONFIG = {
   // Paste the long ID from your Google Sheet's address bar between the quotes.
   // https://docs.google.com/spreadsheets/d/  THIS-PART  /edit
-  SHEET_ID: "1k0u-WqEJjXyqQIfxW-LIRdOz_A8GJh1TbX-iJxD7mv4",
-
+   SHEET_ID: "1k0u-WqEJjXyqQIfxW-LIRdOz_A8GJh1TbX-iJxD7mv4",
   // Tab names in the Google Sheet (must match exactly)
   TABS: { camps: "Campsites", wings: "Wings", photos: "Photos", countdowns: "Countdowns" },
 
