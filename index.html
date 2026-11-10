@@ -64,15 +64,18 @@ html,body{margin:0;height:100%;background:var(--ground);overflow:hidden;color:va
 .leaflet-control-attribution a{color:#B9C3B6!important}
 
 /* spotlight card */
-.spot{position:absolute;left:22px;bottom:22px;max-width:62%;background:rgba(22,32,28,.92);border:2px solid var(--line);border-radius:18px;padding:16px 22px;z-index:600;transition:opacity .6s ease}
+.spot{flex:none;margin:14px 18px 18px;background:var(--panel-2);border:2px solid var(--line);border-radius:16px;padding:14px 22px;transition:opacity .6s ease;overflow:hidden}
+.camp .spot{height:122px}
 .spot.hide{opacity:0}
 .spot .s-title{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.1}
 .spot .s-meta{font-size:22px;color:var(--muted);margin-top:6px;display:flex;gap:18px;flex-wrap:wrap}
-.spot .s-notes{font-size:21px;margin-top:8px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.spot .s-notes{font-size:21px;margin-top:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .stars{color:var(--wings);letter-spacing:2px}
 .camp .stars{color:var(--camp)}
-.wings .spot{left:auto;right:22px;max-width:62%;padding:12px 18px}
-.wings .spot .s-title{font-size:28px}
+.wings .spot{display:flex;align-items:baseline;gap:20px;padding:12px 20px;height:62px;margin-top:12px}
+.wings .spot .s-title{font-size:26px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.wings .spot .s-meta{margin-top:0;flex:none;flex-wrap:nowrap}
+.map{cursor:grab}
 
 /* camp markers */
 .pin{width:22px;height:22px;border-radius:50%;background:var(--camp);border:3px solid #0F1714;box-shadow:0 0 0 2px var(--camp)}
@@ -271,10 +274,15 @@ function renderCountdowns(rows){
 }
 
 /* ---------- camping map ---------- */
-const campMap=L.map("campMap",{zoomControl:false,attributionControl:true,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,zoomSnap:0.25,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
+const campMap=L.map("campMap",{zoomControl:false,attributionControl:true,dragging:true,scrollWheelZoom:true,wheelPxPerZoomLevel:90,doubleClickZoom:true,boxZoom:false,keyboard:false,touchZoom:true,zoomSnap:0.25,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:12,attribution:'&copy; OpenStreetMap contributors'}).addTo(campMap);
 const SA_BOUNDS=L.latLngBounds([-35.2,13.5],[-15.6,36]);
 campMap.fitBounds(SA_BOUNDS);
+// If someone zooms or drags a map, leave it where they put it for 10 minutes before resetting
+const touched={camp:0,wing:0};
+function watch(map,key){ ["wheel","mousedown","touchstart","dblclick"].forEach(ev=>map.getContainer().addEventListener(ev,()=>touched[key]=Date.now(),{passive:true})); }
+const idle=key=>Date.now()-touched[key]>10*60e3;
+watch(campMap,"camp");
 L.marker([CONFIG.HOME.lat,CONFIG.HOME.lng],{icon:L.divIcon({className:"",html:'<div class="pin home"></div>',iconSize:[16,16],iconAnchor:[8,8]}),interactive:false}).addTo(campMap);
 let campLayer=L.layerGroup().addTo(campMap), camps=[], campIdx=-1;
 function parseLoc(r){
@@ -288,7 +296,7 @@ function renderCamps(rows){
     .filter(c=>c.ll).sort((a,b)=>(a.d||0)-(b.d||0));
   camps.forEach(c=>{ c.el=L.marker(c.ll,{icon:L.divIcon({className:"",html:'<div class="pin"></div>',iconSize:[22,22],iconAnchor:[11,11]}),interactive:false}).addTo(campLayer); });
   const bounds=L.latLngBounds(SA_BOUNDS.getSouthWest(),SA_BOUNDS.getNorthEast()); camps.forEach(c=>bounds.extend(c.ll));
-  campMap.invalidateSize(); campMap.fitBounds(bounds,{padding:[30,30]});
+  campMap.invalidateSize(); if(idle("camp")) campMap.fitBounds(bounds,{padding:[30,30]});
   const nights=camps.reduce((s,c)=>s+c.nights,0);
   $("campStats").innerHTML=`<span><b>${camps.length}</b>${camps.length===1?"campsite":"campsites"}</span><span><b>${nights}</b>${nights===1?"night":"nights"} out</span>`;
   $("campEmpty").hidden=camps.length>0;
@@ -309,7 +317,7 @@ function spotCamp(){
 }
 
 /* ---------- wings world map ---------- */
-const wingMap=L.map("wingMap",{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,zoomSnap:0.1,worldCopyJump:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
+const wingMap=L.map("wingMap",{zoomControl:false,attributionControl:false,dragging:true,scrollWheelZoom:true,wheelPxPerZoomLevel:90,doubleClickZoom:true,boxZoom:false,keyboard:false,touchZoom:true,zoomSnap:0.1,worldCopyJump:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
 const byKey={}; WORLD.features.forEach(f=>{ const p=f.properties; [p.n,...p.a,p.i3,p.i2].forEach(k=>{ if(k&&k!=="-99") byKey[norm(k)]=f; }); });
 function findCountry(name){
   const k=norm(name); if(!k) return null;
@@ -323,6 +331,7 @@ let worldLayer=L.geoJSON(WORLD,{style:()=>({color:"#3A4A43",weight:1,fillColor:"
 let smallLayer=L.layerGroup().addTo(wingMap);
 const WORLD_BOUNDS=[[-50,-165],[75,175]];
 wingMap.fitBounds(WORLD_BOUNDS);
+watch(wingMap,"wing");
 let wings=[], wingIdx=-1, counts={};
 function shade(i3,active){
   const n=counts[i3]||0;
@@ -337,7 +346,7 @@ function renderWings(rows){
     if(m.f) counts[m.f.properties.i3]=(counts[m.f.properties.i3]||0)+1;
     else L.circleMarker(m.small,{radius:7,color:"#FFF2E0",weight:2,fillColor:"#F2914A",fillOpacity:1,interactive:false}).addTo(smallLayer); });
   worldLayer.setStyle(f=>shade(f.properties.i3,false));
-  wingMap.invalidateSize(); wingMap.fitBounds(WORLD_BOUNDS);
+  wingMap.invalidateSize(); if(idle("wing")) wingMap.fitBounds(WORLD_BOUNDS);
   const countries=new Set(wings.filter(w=>w.m).map(w=>w.m.f?w.m.f.properties.i3:norm(w.country))).size;
   const rated=wings.map(w=>parseFloat(w.rating)).filter(x=>!isNaN(x));
   $("wingStats").innerHTML=`<span><b>${countries}</b>${countries===1?"country":"countries"}</span><span><b>${wings.length}</b>${wings.length===1?"recipe":"recipes"}</span>`;
@@ -393,6 +402,7 @@ async function refresh(){
     if(CONFIG.SHEET_ID && !$("status").classList.contains("warn")) setStatus("",false);
   }catch(e){ console.error(e); setStatus("Couldn’t reach the Google Sheet – showing the last data",true); }
 }
+setTimeout(()=>{campMap.invalidateSize();wingMap.invalidateSize();},300);
 document.fonts?.ready.then(()=>{ campMap.invalidateSize(); wingMap.invalidateSize(); wingMap.fitBounds(WORLD_BOUNDS); });
 refresh(); loadWeather();
 setInterval(refresh, CONFIG.REFRESH_MINUTES*60e3);
